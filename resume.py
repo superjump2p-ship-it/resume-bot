@@ -19,16 +19,16 @@ router = Router()
 
 
 # =====================================
-# ПОДКЛЮЧЕНИЕ SQLITE
+# SQLITE CONNECTION
 # =====================================
 
-# Создаем файл database.db
+# Create database.db file
 conn = sqlite3.connect("database.db")
 
-# Объект для SQL команд
+# SQL cursor object
 cursor = conn.cursor()
 
-# Создаем таблицу resumes если ее нет
+# Create resumes table if it doesn't exist
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS resumes (
     user_id INTEGER PRIMARY KEY,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS resumes (
 )
 """)
 
-# Сохраняем изменения
+# Save changes
 conn.commit()
 
 
@@ -47,7 +47,7 @@ conn.commit()
 # STATES
 # =====================================
 
-# Тут храним состояние пользователя
+# Store user states here
 states = {}
 
 
@@ -213,10 +213,10 @@ async def cancel(message: Message):
     user_id = message.from_user.id
     if user_id in states:
         states.pop(user_id, None)
-        await message.answer("You dont have an active form.")
+        await message.answer("Form cancelled")
     else:
 
-        await message.answer("Form cancelled")
+        await message.answer("You dont have an active form.")
 
 
 @router.message(Command("myresume"))
@@ -224,7 +224,7 @@ async def my_resume(message: Message):
 
     user_id = message.from_user.id
 
-    # Ищем resume пользователя
+    
     cursor.execute(
         """
         SELECT name, age, position, experience
@@ -236,12 +236,12 @@ async def my_resume(message: Message):
 
     data = cursor.fetchone()
 
-    # Если resume нет
+    
     if data is None:
         await message.answer("You do not have a resume yet")
         return
 
-    # Отправляем resume
+    
     await message.answer(
         f"📋Your resume:\n\n"
         f"👤Name: {data[0]}\n"
@@ -258,11 +258,11 @@ async def form(message: Message):
 
     user_id = message.from_user.id
 
-    # Если пользователь не начал анкету
+    
     if user_id not in states:
         return
 
-    # Получаем текущее состояние
+   
     state = states[user_id]
 
     if state == "edit_name":
@@ -320,13 +320,13 @@ async def form(message: Message):
         await message.answer("Experience updated👨‍💻")
         states.pop(user_id, None)
         return
-    #проверка на нажатие кнопки edit resume
+    
 
     
     
     if state == "wait_name":
 
-        # Создаем resume и сохраняем имя
+        
         cursor.execute(
             """
             INSERT OR REPLACE INTO resumes (user_id, name)
@@ -337,24 +337,22 @@ async def form(message: Message):
 
         conn.commit()
 
-        # Меняем состояние
+        
         states[user_id] = "wait_age"
 
         await message.answer("How old are you?")
 
         return
 
-    # =========================
-    # ВВОД ВОЗРАСТА
-    # =========================
+   
     if state == "wait_age":
 
-        # Проверяем что введены цифры
+        
         if not message.text.isdigit():
             await message.answer("Age must be a number")
             return
 
-        # Сохраняем возраст
+
         cursor.execute(
             """
             UPDATE resumes
@@ -366,7 +364,7 @@ async def form(message: Message):
 
         conn.commit()
 
-        # Следующее состояние
+        
         states[user_id] = "wait_position"
 
         await message.answer("What position do you want to work in?")
@@ -374,11 +372,11 @@ async def form(message: Message):
         return
 
     # =========================
-    # ВВОД ДОЛЖНОСТИ
+    #
     # =========================
     if state == "wait_position":
 
-        # Сохраняем должность
+        
         cursor.execute(
             """
             UPDATE resumes
@@ -399,13 +397,13 @@ async def form(message: Message):
         return
 
     # =========================
-    # ВВОД ОПЫТА
+    
     # =========================
     if state == "wait_experience":
         if not message.text.isdigit():
             await message.answer("Experience must be a number😕")
             return
-        # Сохраняем опыт
+        
         else:
 
             cursor.execute(
@@ -419,7 +417,7 @@ async def form(message: Message):
 
             conn.commit()
 
-        # Получаем данные пользователя
+        
             cursor.execute(
                 """
                 SELECT name, age, position, experience
@@ -431,7 +429,7 @@ async def form(message: Message):
 
             data = cursor.fetchone()
 
-        # Отправляем резюме
+        
             await message.answer(
                 f"📋Here is your resume:\n\n"
                 f"👤Name: {data[0]}\n"
@@ -440,7 +438,7 @@ async def form(message: Message):
                 f"🚀Experience: {data[3]}"
             )
 
-        # Очищаем состояние
+       
             del states[user_id]
 
             return
